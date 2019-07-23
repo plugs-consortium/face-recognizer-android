@@ -19,6 +19,17 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="Face Recognition">
+        <SeekBarPreference
+            android:key="frthreads"
+            android:title="Threads"
+            android:summary="Number of threads to use for inference"
+            android:max="9"
+            android:defaultValue="1" />
+    </PreferenceCategory>
+
+
+    <PreferenceCategory
         android:title="OGC SOS">
 
         <EditTextPreference
