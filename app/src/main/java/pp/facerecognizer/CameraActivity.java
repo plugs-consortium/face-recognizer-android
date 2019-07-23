@@ -97,6 +97,15 @@ public abstract class CameraActivity extends AppCompatActivity
         return yuvBytes[0];
     }
 
+    //TODO: Check for support for android.hardware.Camera API Callback.
+    /** Callback for android.hardware.Camera API */
+
+    //onImageAvailable
+    //Purpose: Retrieve data from camera and convert YUV420 image into ARGB8888 format.
+    //         ARGB = Alpha Red Green Blue each byte represents value.  Image is opaque, thus Alpha is always 8.
+    //
+    //         Stores YUV values using fillBytes method into yuvBytes.
+    //         Uses these yuvBytes values to store into rgbBytes after conversion.
     /**
     * Callback for Camera2 API
     */

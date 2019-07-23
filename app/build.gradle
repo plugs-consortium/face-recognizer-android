@@ -35,4 +35,5 @@ dependencies {
     implementation 'com.google.android.material:material:1.1.0-alpha04'
     implementation 'com.github.sofwerx:swe-android:1.0.6' //for SOS server connectivity
     implementation 'org.tensorflow:tensorflow-android:1.13.0-rc0'
+    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
 }
