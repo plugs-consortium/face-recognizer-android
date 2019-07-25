@@ -21,7 +21,7 @@ import android.graphics.RectF;
 import java.util.List;
 
 /** Generic interface for interacting with different recognition engines. */
-public interface Classifier {
+public interface DetectionClassifier {
   List<Recognition> recognizeImage(Bitmap bitmap);
 
   void enableStatLogging(final boolean debug);

@@ -63,14 +63,37 @@ import pp.facerecognizer.env.FileUtils;
 import pp.facerecognizer.env.ImageUtils;
 import pp.facerecognizer.env.Logger;
 import pp.facerecognizer.tracking.MultiBoxTracker;
+import pp.objectdetection.customview.OverlayView;
+import pp.objectdetection.customview.OverlayView.DrawCallback;
+import pp.objectdetection.tflite.DetectionClassifier;
+import pp.objectdetection.tflite.TFLiteObjectDetectionAPIModel;
+
+
+
 
 /**
 * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
 * objects.
 */
 public class MainActivity extends CameraActivity implements OnImageAvailableListener {
+
+    // Which detection model to use: by default uses Tensorflow Object Detection API frozen
+    // checkpoints.
+    private enum DetectorMode {
+        TF_OD_API;
+    }
+
     private final static String TAG = "AFD";
     private static final Logger LOGGER = new Logger();
+
+    // Configuration values for the prepackaged SSD model.
+    private static final int TF_OD_API_INPUT_SIZE = 300;
+    private static final boolean TF_OD_API_IS_QUANTIZED = true;
+    private static final String TF_OD_API_MODEL_FILE = "detect.tflite";
+    private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/labelmap.txt";
+    private static final DetectorMode MODE = DetectorMode.TF_OD_API;
+    // Minimum detection confidence to track a detection.
+    private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.5f;
 
     private static final int FACE_SIZE = 160;
     private static final int CROP_SIZE = 300;
@@ -83,6 +106,7 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
     private Integer sensorOrientation;
 
     private Classifier classifier;
+    private DetectionClassifier detectionClassifier;
 
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;

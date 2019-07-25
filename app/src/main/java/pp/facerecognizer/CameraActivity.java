@@ -82,6 +82,8 @@ public abstract class CameraActivity extends AppCompatActivity
         } else {
             requestPermission();
         }
+
+
     }
 
     protected int[] getRgbBytes() {

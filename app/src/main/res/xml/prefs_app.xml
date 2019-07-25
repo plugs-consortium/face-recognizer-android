@@ -21,6 +21,7 @@
     <PreferenceCategory
         android:title="Face Recognition">
         <SeekBarPreference
+            android:id="@+id/threads"
             android:key="frthreads"
             android:title="Threads"
             android:summary="Number of threads to use for inference"

@@ -43,7 +43,7 @@ import java.util.Vector;
  * Wrapper for frozen detection models trained using the Tensorflow Object Detection API:
  * github.com/tensorflow/models/tree/master/research/object_detection
  */
-public class TFLiteObjectDetectionAPIModel implements Classifier {
+public class TFLiteObjectDetectionAPIModel implements DetectionClassifier {
   private static final Logger LOGGER = new Logger();
 
   // Only return this many results.
@@ -98,7 +98,7 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
    * @param inputSize The size of image input
    * @param isQuantized Boolean representing model is quantized or not
    */
-  public static Classifier create(
+  public static DetectionClassifier create(
       final AssetManager assetManager,
       final String modelFilename,
       final String labelFilename,
