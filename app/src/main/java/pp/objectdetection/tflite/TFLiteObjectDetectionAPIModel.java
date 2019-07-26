@@ -22,6 +22,8 @@ import android.graphics.RectF;
 import android.os.Trace;
 
 import org.tensorflow.lite.Interpreter;
+
+import pp.Recognition;
 import pp.facerecognizer.env.Logger;
 
 import java.io.BufferedReader;

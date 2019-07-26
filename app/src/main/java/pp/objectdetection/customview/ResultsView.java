@@ -15,7 +15,7 @@ limitations under the License.
 
 package pp.objectdetection.customview;
 
-import pp.objectdetection.tflite.Classifier.Recognition;
+import pp.Recognition;
 
 import java.util.List;
 

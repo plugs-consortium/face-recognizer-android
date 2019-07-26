@@ -22,7 +22,7 @@ import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.View;
 
-import pp.objectdetection.tflite.Classifier.Recognition;
+import pp.Recognition;
 
 import java.util.List;
 

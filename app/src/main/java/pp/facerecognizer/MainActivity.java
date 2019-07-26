@@ -26,6 +26,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.net.Uri;
@@ -38,6 +39,7 @@ import android.util.TypedValue;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -50,9 +52,11 @@ import org.sofwerx.ogc.sos.SosSensor;
 import org.sofwerx.ogc.sos.SosService;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -62,13 +66,12 @@ import pp.facerecognizer.env.BorderedText;
 import pp.facerecognizer.env.FileUtils;
 import pp.facerecognizer.env.ImageUtils;
 import pp.facerecognizer.env.Logger;
-import pp.facerecognizer.tracking.MultiBoxTracker;
-import pp.objectdetection.customview.OverlayView;
-import pp.objectdetection.customview.OverlayView.DrawCallback;
+import pp.facerecognizer.tracking.FaceMultiBoxTracker;
+import pp.facerecognizer.OverlayView;
 import pp.objectdetection.tflite.DetectionClassifier;
 import pp.objectdetection.tflite.TFLiteObjectDetectionAPIModel;
-
-
+import pp.Recognition;
+import pp.objectdetection.tracking.ObjectMultiBoxTracker;
 
 
 /**
@@ -120,7 +123,8 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
     private Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
 
-    private MultiBoxTracker tracker;
+    private FaceMultiBoxTracker faceTracker;
+    private ObjectMultiBoxTracker objectTracker;
 
     private byte[] luminanceCopy;
 
@@ -236,7 +240,8 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
         borderedText = new BorderedText(textSizePx);
         borderedText.setTypeface(Typeface.MONOSPACE);
 
-        tracker = new MultiBoxTracker(this);
+        faceTracker = new FaceMultiBoxTracker(this);
+        objectTracker = new ObjectMultiBoxTracker(this);
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -260,9 +265,11 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
         trackingOverlay = findViewById(R.id.tracking_overlay);
         trackingOverlay.addCallback(
                 canvas -> {
-                    tracker.draw(canvas);
+                    faceTracker.draw(canvas);
+                    objectTracker.draw(canvas);
                     if (isDebug()) {
-                        tracker.drawDebug(canvas);
+                        faceTracker.drawDebug(canvas);
+                        objectTracker.drawDebug(canvas);
                     }
                 });
 
@@ -320,10 +327,28 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
             FileUtils.copyAsset(mgr, FileUtils.LABEL_FILE);
         }
 
+        //Initialize both classifiers.
         try {
             classifier = Classifier.getInstance(getAssets(), FACE_SIZE, FACE_SIZE);
+            detectionClassifier =
+                    TFLiteObjectDetectionAPIModel.create(
+                            getAssets(),
+                            TF_OD_API_MODEL_FILE,
+                            TF_OD_API_LABELS_FILE,
+                            TF_OD_API_INPUT_SIZE,
+                            TF_OD_API_IS_QUANTIZED);
+        }
+        catch (final IOException e) {
+            e.printStackTrace();
+            LOGGER.e(e, "Exception initializing classifier!");
+            Toast toast =
+                    Toast.makeText(
+                            getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
+            toast.show();
+            finish();
         } catch (Exception e) {
-            LOGGER.e("Exception initializing classifier!", e);
+            LOGGER.e("General Exception initializing classifier!", e);
+            LOGGER.e(e.getMessage());
             finish();
         }
 
@@ -336,7 +361,7 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
         ++timestamp;
         final long currTimestamp = timestamp;
         byte[] originalLuminance = getLuminance();
-        tracker.onFrame(
+        faceTracker.onFrame(
                 previewWidth,
                 previewHeight,
                 getLuminanceStride(),
@@ -374,14 +399,51 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
                     final long startTime = SystemClock.uptimeMillis();
 
                     cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                    List<Classifier.Recognition> mappedRecognitions =
-                            classifier.recognizeImage(croppedBitmap,cropToFrameTransform);
+                    final Paint paint = new Paint();
+                    paint.setColor(Color.RED);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(2.0f);
+
+
+                    float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+                    switch (MODE) {
+                        case TF_OD_API:
+                            minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+                            break;
+                    }
+
+                    //Run inference on faces
+                    List<Recognition> mappedRecognitions = classifier.recognizeImage(croppedBitmap,cropToFrameTransform);
+
+                    //Run inference on objects
+                    List<Recognition> objectResults = detectionClassifier.recognizeImage(croppedBitmap);
+
+                    lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+
+                    final List<Recognition> objectRecognitions = new LinkedList<>();
+
+                    for (final Recognition result : objectResults) {
+                        final RectF location = result.getLocation();
+                        if (location != null && result.getConfidence() >= minimumConfidence) {
+                            canvas.drawRect(location, paint);
+
+                            cropToFrameTransform.mapRect(location);
+
+                            result.setLocation(location);
+                            objectRecognitions.add(result);
+                        }
+                    }
+
+                    objectTracker.trackResults(objectRecognitions, currTimestamp);
+                    trackingOverlay.postInvalidate();
+
+                    computingDetection = false;
 
                     //check to see if there is something to report
                     if (reportOverSos && (sosURL != null) && (System.currentTimeMillis() > nextAvailableReportingTime)) {
-                        Classifier.Recognition top = null;
+                        Recognition top = null;
                         if (mappedRecognitions != null) {
-                            for (Classifier.Recognition recog : mappedRecognitions) {
+                            for (Recognition recog : mappedRecognitions) {
                                 if ((recog != null) && !"unknown".equalsIgnoreCase(recog.getTitle())) {
                                     if (top == null)
                                         top = recog;
@@ -415,8 +477,8 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
                         }
                     }
 
-                    lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                    tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
+
+                    faceTracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
                     trackingOverlay.postInvalidate();
 
                     requestRender();
@@ -483,5 +545,15 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
         intent.setType("image/*");
 
         startActivityForResult(intent, requestCode);
+    }
+
+    @Override
+    protected void setUseNNAPI(final boolean isChecked) {
+        runInBackground(() -> detectionClassifier.setUseNNAPI(isChecked));
+    }
+
+    @Override
+    protected void setNumThreads(final int numThreads) {
+        runInBackground(() -> detectionClassifier.setNumThreads(numThreads));
     }
 }

@@ -379,4 +379,6 @@ public abstract class CameraActivity extends AppCompatActivity
     protected abstract void onPreviewSizeChosen(final Size size, final int rotation);
     protected abstract int getLayoutId();
     protected abstract Size getDesiredPreviewFrameSize();
+    protected abstract void setNumThreads(int numThreads);
+    protected abstract void setUseNNAPI(boolean isChecked);
 }

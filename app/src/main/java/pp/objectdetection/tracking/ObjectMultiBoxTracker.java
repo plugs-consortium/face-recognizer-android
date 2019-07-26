@@ -31,14 +31,14 @@ import android.util.TypedValue;
 import pp.objectdetection.env.BorderedText;
 import pp.objectdetection.env.ImageUtils;
 import pp.objectdetection.env.Logger;
-import pp.objectdetection.tflite.Classifier.Recognition;
+import pp.Recognition;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
 /** A tracker that handles non-max suppression and matches existing objects to new detections. */
-public class MultiBoxTracker {
+public class ObjectMultiBoxTracker {
   private static final float TEXT_SIZE_DIP = 18;
   private static final float MIN_SIZE = 16.0f;
   private static final int[] COLORS = {
@@ -70,7 +70,7 @@ public class MultiBoxTracker {
   private int frameHeight;
   private int sensorOrientation;
 
-  public MultiBoxTracker(final Context context) {
+  public ObjectMultiBoxTracker(final Context context) {
     for (final int color : COLORS) {
       availableColors.add(color);
     }
@@ -117,6 +117,7 @@ public class MultiBoxTracker {
     logger.i("Processing %d results from %d", results.size(), timestamp);
     processResults(results);
   }
+
 
   private Matrix getFrameToCanvasMatrix() {
     return frameToCanvasMatrix;

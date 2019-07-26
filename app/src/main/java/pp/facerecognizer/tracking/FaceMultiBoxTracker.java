@@ -33,7 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-import pp.facerecognizer.Classifier.Recognition;
+import pp.Recognition;
 import pp.facerecognizer.env.BorderedText;
 import pp.facerecognizer.env.ImageUtils;
 import pp.facerecognizer.env.Logger;
@@ -42,7 +42,7 @@ import pp.facerecognizer.env.Logger;
  * A tracker wrapping ObjectTracker that also handles non-max suppression and matching existing
  * objects to new detections.
  */
-public class MultiBoxTracker {
+public class FaceMultiBoxTracker {
     private final Logger logger = new Logger();
 
     private static final float TEXT_SIZE_DIP = 18;
@@ -96,7 +96,7 @@ public class MultiBoxTracker {
     private int sensorOrientation;
     private Context context;
 
-    public MultiBoxTracker(final Context context) {
+    public FaceMultiBoxTracker(final Context context) {
         this.context = context;
         for (final int color : COLORS) {
             availableColors.add(color);
