@@ -272,6 +272,7 @@ public class MainActivity extends CameraActivity implements OnImageAvailableList
                         objectTracker.drawDebug(canvas);
                     }
                 });
+        objectTracker.setFrameConfiguration(previewWidth, previewHeight, sensorOrientation);
 
         addCallback(
                 canvas -> {
